@@ -9,16 +9,18 @@ pipeline {
     timeout(time: 30, unit: 'MINUTES')
   }
   environment {
-    DOCKER_TAG  = "${(env.BRANCH_NAME == 'develop' ? 'dev-' : (env.BRANCH_NAME == 'hotfix' ? 'hotfix-' : '' )) + env.BUILD_NUMBER}"
+    DOCKER_TAG  = "${(env.BRANCH_NAME == 'master' ? 'dev-' : (env.BRANCH_NAME == 'hotfix' ? 'hotfix-' : '' )) + env.BUILD_NUMBER}"
 #    NEXUS=credentials('jenkins-nexus')
-#    NPMRC="""@vylla:registry=https://nexus.vylla.com/repository/vylla-npm///nexus.vylla.com/repository/vylla-npm/:_auth=${(NEXUS_USR + ":" + NEXUS_PSW).bytes.encodeBase64().toString()}
+     NPMRC="""
+@vylla:registry=https://nexus.vylla.com/repository/vylla-npm/
+//nexus.vylla.com/repository/vylla-npm/:_auth=${(NEXUS_USR + ":" + NEXUS_PSW).bytes.encodeBase64().toString()}
 """
   }
   stages {
     stage('Build') {
       steps {
         container('docker') {
-          sh "#!/bin/sh -e\ndocker build --build-arg NPMRC=\"${NPMRC}\" -t 895239460497.dkr.ecr.us-east-1.amazonaws.com/${serviceName}:${DOCKER_TAG} ."
+          sh "#!/bin/sh -e\ndocker build --build-arg NPMRC=\"${NPMRC}\" -t 778557655318.dkr.ecr.us-west-1.amazonaws.com/${serviceName}:${DOCKER_TAG} ."
         }
       }
     }
@@ -26,15 +28,13 @@ pipeline {
       when {
         anyOf {
           branch 'master'
-          branch 'develop'
-          branch 'hotfix'
         }
       }
       steps {
         container('docker') {
 	  script {
-		docker.withRegistry('https://895239460497.dkr.ecr.us-east-1.amazonaws.com', 'ecr:us-east-1:ecr-vylla') {
-    		docker.image("895239460497.dkr.ecr.us-east-1.amazonaws.com/${serviceName}:${env.DOCKER_TAG}").push()
+		docker.withRegistry('https://778557655318.dkr.ecr.us-west-1.amazonaws.com', 'ecr:us-east-1:ecr-vylla') {
+    		docker.image("778557655318.dkr.ecr.us-west-1.amazonaws.com/${serviceName}:${env.DOCKER_TAG}").push()
   		}
 	  }
         }
