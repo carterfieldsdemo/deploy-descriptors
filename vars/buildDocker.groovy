@@ -10,17 +10,12 @@ pipeline {
   }
   environment {
     DOCKER_TAG  = "${(env.BRANCH_NAME == 'master' ? 'dev-' : (env.BRANCH_NAME == 'hotfix' ? 'hotfix-' : '' )) + env.BUILD_NUMBER}"
-#    NEXUS=credentials('jenkins-nexus')
-     NPMRC="""
-@vylla:registry=https://nexus.vylla.com/repository/vylla-npm/
-//nexus.vylla.com/repository/vylla-npm/:_auth=${(NEXUS_USR + ":" + NEXUS_PSW).bytes.encodeBase64().toString()}
-"""
   }
   stages {
     stage('Build') {
       steps {
         container('docker') {
-          sh "#!/bin/sh -e\ndocker build --build-arg NPMRC=\"${NPMRC}\" -t 778557655318.dkr.ecr.us-west-1.amazonaws.com/${serviceName}:${DOCKER_TAG} ."
+          sh "#!/bin/sh -e\ndocker build -t 778557655318.dkr.ecr.us-west-1.amazonaws.com/${serviceName}:${DOCKER_TAG} ."
         }
       }
     }
@@ -33,7 +28,7 @@ pipeline {
       steps {
         container('docker') {
 	  script {
-		docker.withRegistry('https://778557655318.dkr.ecr.us-west-1.amazonaws.com', 'ecr:us-east-1:ecr-vylla') {
+		docker.withRegistry('https://778557655318.dkr.ecr.us-west-1.amazonaws.com', 'ecr:us-west-1:carter-ecr') {
     		docker.image("778557655318.dkr.ecr.us-west-1.amazonaws.com/${serviceName}:${env.DOCKER_TAG}").push()
   		}
 	  }
@@ -42,12 +37,11 @@ pipeline {
     }
     stage('Trigger deploy to dev') {
       when {
-        branch 'develop'
+        branch 'master'
       }
       steps {
         build(job: '/vylla/deploy-descriptors-2/master', wait: false, parameters: [
           [$class: 'StringParameterValue', name: 'TAG', value: DOCKER_TAG],
-          [$class: 'StringParameterValue', name: 'ENVIRONMENT', value: 'DEV'],
           [$class: 'StringParameterValue', name: 'SERVICE', value: serviceName]
         ])
       }
